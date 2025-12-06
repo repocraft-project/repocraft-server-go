@@ -13,16 +13,25 @@ import (
 	"github.com/repocraft-project/repocraft-server-go/internal/infra/git/httpsmart"
 )
 
+const (
+	repoRoot        = "./.repositories"
+	httpListenAddr  = ":8080"
+	uploadPackPath  = ""
+	receivePackPath = ""
+)
+
 // githttpd launches a Smart HTTP server on :8080.
 // Repositories are served from ./repositories by default.
 func main() {
 	rootAbs, err := filepath.Abs(repoRoot)
 	if err != nil {
-		exitErr(fmt.Sprintf("resolve repo root: %v", err))
+		fmt.Fprintf(os.Stderr, "resolve repo root: %v\n", err)
+		os.Exit(1)
 	}
 
 	if err := os.MkdirAll(rootAbs, 0o755); err != nil {
-		exitErr(fmt.Sprintf("create repo root: %v", err))
+		fmt.Fprintf(os.Stderr, "create repo root: %v\n", err)
+		os.Exit(1)
 	}
 
 	handler := &httpsmart.Server{
@@ -42,7 +51,11 @@ func main() {
 
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- server.ListenAndServe()
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errCh <- err
+			return
+		}
+		errCh <- nil
 	}()
 
 	sigCh := make(chan os.Signal, 1)
@@ -51,26 +64,14 @@ func main() {
 	select {
 	case err := <-errCh:
 		if err != nil && err != http.ErrServerClosed {
-			exitErr(err.Error())
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
 		}
 	case sig := <-sigCh:
 		fmt.Printf("Received signal %s, shutting down...\n", sig.String())
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := server.Shutdown(ctx); err != nil {
-			exitErr(fmt.Sprintf("shutdown error: %v", err))
-		}
+		_ = server.Shutdown(ctx)
+		<-errCh // wait for server goroutine to exit
 	}
 }
-
-func exitErr(msg string) {
-	fmt.Fprintln(os.Stderr, msg)
-	os.Exit(1)
-}
-
-const (
-	repoRoot        = "./repositories"
-	httpListenAddr  = ":8080"
-	uploadPackPath  = ""
-	receivePackPath = ""
-)
