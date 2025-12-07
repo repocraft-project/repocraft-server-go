@@ -1,6 +1,6 @@
 # githttpd demo
 
-This demo starts a minimal Git Smart HTTP server on `:8080`, serving bare repositories under `./repositories`.
+This demo starts a minimal Git Smart HTTP server on `:8080`, serving bare repositories under `./.repositories`.
 
 ## Run
 
@@ -11,19 +11,19 @@ go run ./cmd/githttpd
 
 ## Repository layout
 
-Place bare repos under `./repositories`, matching URL paths. Example for `http://localhost:8080/cylix/lee.git`:
+Place bare repos under `./.repositories`, matching URL paths. Example for `http://localhost:8080/owner/repo.git`:
 
 ```
 repocraft-server-go/
-  repositories/
-    cylix/
-      lee/   # bare repo (run `git init --bare` inside this directory)
+  .repositories/
+    owner/
+      repo/   # bare repo (run `git init --bare` inside this directory)
 ```
 
 ## Clone
 
 ```bash
-git clone http://localhost:8080/cylix/lee.git
+git clone http://localhost:8080/owner/repo.git
 ```
 
 ## Push

@@ -21,7 +21,7 @@ const (
 )
 
 // githttpd launches a Smart HTTP server on :8080.
-// Repositories are served from ./repositories by default.
+// Repositories are served from ./.repositories by default.
 func main() {
 	rootAbs, err := filepath.Abs(repoRoot)
 	if err != nil {
